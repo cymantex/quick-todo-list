@@ -2,7 +2,7 @@
   "name": "quick-todo-list",
   "version": "1.0.0",
   "main": "dist-electron/main.js",
-  "description": "Electron Vite React boilerplate.",
+  "description": "A simple TODO list app with quick keyboard shortcuts",
   "author": "Simon Eriksson <sim.eriksson@outlook.com>",
   "license": "MIT",
   "private": true,
@@ -29,14 +29,10 @@
     "prettier": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "sass": "^1.64.1",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.1.6",
     "vite": "^4.4.7",
     "vite-plugin-electron": "^0.12.0",
     "vite-plugin-electron-renderer": "^0.14.5"
-  },
-  "engines": {
-    "node": "^14.18.0 || >=16.0.0"
   }
 }
