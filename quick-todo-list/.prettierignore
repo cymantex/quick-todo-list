@@ -1,0 +1,7 @@
+dist
+dist-electron
+release
+coverage
+README.md
+node_modules
+.idea
