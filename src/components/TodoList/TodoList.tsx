@@ -10,7 +10,7 @@ interface TodoListProps {
 
 export const TodoList = ({ onTodoTextChange }: TodoListProps) => {
   const todos = useTodos();
-  const { markedTodo, selectedTodoIndexes, selectTodo } = useSelectTodoStore();
+  const { markedTodo, selectedTodoIds, selectTodo } = useSelectTodoStore();
 
   useSelectTodoShortcuts(todos);
 
@@ -18,10 +18,10 @@ export const TodoList = ({ onTodoTextChange }: TodoListProps) => {
     <>
       {todos.map((todo) => (
         <TodoInput
-          key={todo.index}
+          key={todo.sortIndex}
           todo={todo}
-          marked={markedTodo?.index === todo.index}
-          selected={selectedTodoIndexes.includes(todo.index)}
+          marked={markedTodo?.id === todo.id}
+          selected={selectedTodoIds.includes(todo.id)}
           onClick={() => selectTodo(todo)}
           onBlur={() => {}}
           onChange={(event) => onTodoTextChange(todo, event.target.value)}

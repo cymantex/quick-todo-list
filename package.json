@@ -45,6 +45,7 @@
     "classnames": "^2.3.2",
     "local-storage-superjson": "^1.1.1",
     "lodash": "^4.17.21",
+    "uuid": "^9.0.0",
     "zustand": "^4.3.9"
   }
 }

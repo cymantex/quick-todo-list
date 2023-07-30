@@ -3,89 +3,93 @@ import { Todo } from "@/todo/TodoStore";
 
 interface SelectTodoStore {
   markedTodo?: Todo;
-  selectedTodoIndexes: number[];
+  selectedTodoIds: string[];
   selectTodo: (todo: Todo) => void;
   unselectAllTodos: () => void;
   selectAllTodos: (todos: Todo[]) => void;
-  selectPreviousTodo: (todos: Todo[], currentIndex: number) => void;
-  selectNextTodo: (todos: Todo[], currentIndex: number) => void;
-  multiSelectPreviousTodo: (todos: Todo[], currentIndex: number, lastIndex: number) => void;
-  multiSelectNextTodo: (todos: Todo[], currentIndex: number, lastIndex: number) => void;
+  selectPreviousTodo: (todos: Todo[], todo?: Todo) => void;
+  selectNextTodo: (todos: Todo[], todo?: Todo) => void;
+  multiSelectPreviousTodo: (todos: Todo[], todo?: Todo) => void;
+  multiSelectNextTodo: (todos: Todo[], todo?: Todo) => void;
 }
 
 export const useSelectTodoStore = create<SelectTodoStore>((set) => ({
-  selectedTodoIndexes: [] as number[],
-  unselectAllTodos: () => set({ selectedTodoIndexes: [], markedTodo: undefined }),
+  selectedTodoIds: [],
+  unselectAllTodos: () => set({ selectedTodoIds: [], markedTodo: undefined }),
   selectTodo: (todo) =>
-    set((state) => ({ ...state, selectedTodoIndexes: [todo.index], markedTodo: todo })),
+    set((state) => ({ ...state, selectedTodoIds: [todo.id], markedTodo: todo })),
   selectAllTodos: (todos) =>
     set((state) => ({
       ...state,
-      selectedTodoIndexes: todos.map((todo) => todo.index),
+      selectedTodoIds: todos.map((todo) => todo.id),
       markedTodo: undefined,
     })),
-  selectPreviousTodo: (todos, currentIndex) =>
+  selectPreviousTodo: (todos, todo) =>
     set((state) => {
-      if (currentIndex - 1 >= 0) {
-        const todo = todos[currentIndex - 1];
+      const currentIndex = todos.findIndex((t) => t.id === todo?.id);
+      const nextTodo = todos[currentIndex - 1];
+
+      if (nextTodo) {
         return {
           ...state,
-          selectedTodoIndexes: [todo.index],
-          markedTodo: todo,
+          selectedTodoIds: [nextTodo.id],
+          markedTodo: nextTodo,
         };
       }
 
       return state;
     }),
-  selectNextTodo: (todos, currentIndex) =>
+  selectNextTodo: (todos, todo) =>
     set((state) => {
-      const todo = todos[currentIndex + 1];
-      if (currentIndex + 1 < todos.length) {
+      const currentIndex = todos.findIndex((t) => t.id === todo?.id);
+      const nextTodo = todos[currentIndex + 1];
+
+      if (nextTodo) {
         return {
-          selectedTodoIndexes: [todo.index],
-          markedTodo: todo,
+          selectedTodoIds: [nextTodo.id],
+          markedTodo: nextTodo,
         };
       }
 
       return state;
     }),
-  multiSelectPreviousTodo: (todos, currentIndex, lastIndex) =>
+  multiSelectPreviousTodo: (todos, todo) =>
     set((state) => {
-      const todo = todos[currentIndex - 1];
-      const indexToSelect = todo?.index;
+      const currentIndex = todos.findIndex((t) => t.id === todo?.id);
+      const nextTodo = todos[currentIndex - 1];
 
-      if (state.selectedTodoIndexes.includes(indexToSelect)) {
+      if (state.selectedTodoIds.includes(nextTodo?.id)) {
         return {
           ...state,
-          selectedTodoIndexes: state.selectedTodoIndexes.filter((index) => index !== lastIndex),
-          markedTodo: todo,
+          selectedTodoIds: state.selectedTodoIds.filter((todoId) => todoId !== todo?.id),
+          markedTodo: nextTodo,
         };
-      } else if (currentIndex - 1 >= 0) {
+      } else if (nextTodo) {
         return {
           ...state,
-          selectedTodoIndexes: [...state.selectedTodoIndexes, indexToSelect],
-          markedTodo: todo,
+          selectedTodoIds: [...state.selectedTodoIds, nextTodo.id],
+          markedTodo: nextTodo,
         };
       }
 
       return state;
     }),
-  multiSelectNextTodo: (todos, currentIndex, lastIndex) =>
+  multiSelectNextTodo: (todos, todo) =>
     set((state) => {
-      const todo = todos[currentIndex + 1];
-      const indexToSelect = todo?.index;
+      const currentIndex = todos.findIndex((t) => t.id === todo?.id);
+      const nextTodo = todos[currentIndex + 1];
 
-      if (state.selectedTodoIndexes.includes(indexToSelect)) {
+      if (state.selectedTodoIds.includes(nextTodo?.id)) {
         return {
           ...state,
-          selectedTodoIndexes: state.selectedTodoIndexes.filter((index) => index !== lastIndex),
-          markedTodo: todo,
+          selectedTodoIds: state.selectedTodoIds.filter((todoId) => todoId !== todo?.id),
+          markedTodo: nextTodo,
         };
-      } else if (currentIndex - 1 >= 0) {
+      } else if (nextTodo) {
         return {
           ...state,
-          selectedTodoIndexes: [...state.selectedTodoIndexes, indexToSelect],
-          markedTodo: todo,
+          selectedTodoIds: [...state.selectedTodoIds, nextTodo.id],
+          markedTodo: nextTodo,
         };
       }
 

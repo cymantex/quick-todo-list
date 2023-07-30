@@ -13,7 +13,7 @@ function App() {
   // Ctrl + N -> new Todo
   // Ctrl + Shift + N -> new sub todo
   // Ctrl + d -> duplicate
-  const { selectedTodoIndexes, selectTodo, unselectAllTodos } = useSelectTodoStore();
+  const { selectedTodoIds, selectTodo, unselectAllTodos } = useSelectTodoStore();
 
   function selectLastTodoOrUnselect() {
     const lastTodo = _.last(todoStore.getTodos());
@@ -25,13 +25,14 @@ function App() {
     }
   }
 
-  useKeyboardShortcuts(["ArrowUp"], () => {});
+  useKeyboardShortcuts(["CtrlArrowUp"], () => todoStore.moveUp(selectedTodoIds));
+  useKeyboardShortcuts(["CtrlArrowDown"], () => todoStore.moveDown(selectedTodoIds));
   useKeyboardShortcuts(["CtrlD"], () => {
-    todoStore.duplicate(selectedTodoIndexes);
+    todoStore.duplicate(selectedTodoIds);
     selectLastTodoOrUnselect();
   });
   useKeyboardShortcuts(["Delete"], () => {
-    todoStore.deleteTodos(selectedTodoIndexes);
+    todoStore.deleteTodos(selectedTodoIds);
     selectLastTodoOrUnselect();
   });
   useKeyboardShortcuts(["CtrlN"], () => selectTodo(todoStore.addTodo({ text: "" })));

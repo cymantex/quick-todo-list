@@ -4,17 +4,17 @@ import _ from "lodash";
 
 export function useSelectTodoShortcut(
   shortcut: Shortcut,
-  selectedTodoIndexes: number[],
+  selectedTodoIds: string[],
   todos: Todo[],
-  selectNextTodo: (currentIndex: number, lastIndex: number) => void,
+  selectNextTodo: (todo: Todo) => void,
 ) {
   useKeyboardShortcuts([shortcut], () => {
-    if (selectedTodoIndexes.length === 0) {
+    if (selectedTodoIds.length === 0) {
       return;
     }
 
-    const lastIndex = _.last(selectedTodoIndexes)!;
-    const currentIndex = todos.findIndex((todo) => todo.index === lastIndex);
-    selectNextTodo(currentIndex, lastIndex);
+    const currentId = _.last(selectedTodoIds)!;
+    const currentTodo = todos.find((todo) => todo.id === currentId)!;
+    selectNextTodo(currentTodo);
   });
 }

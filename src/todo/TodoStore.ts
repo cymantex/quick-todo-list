@@ -1,18 +1,20 @@
+import { v4 as uuid } from "uuid";
 import { localStorageJson } from "local-storage-superjson";
-import _ from "lodash";
+import _, { last } from "lodash";
 
 export interface Todo {
-  index: number;
+  id: string;
+  sortIndex: number;
   text: string;
   completed: boolean;
   subtasks: number[];
-  parent?: number;
+  parent?: string;
 }
 
 type TodoStoreSubscriber = (todos: Todo[]) => void;
 
 interface TodoUpdate extends Partial<Todo> {
-  index: number;
+  sortIndex: number;
 }
 
 interface TodoCreate {
@@ -35,7 +37,7 @@ export class TodoStore {
   }
 
   getTodos = (): Todo[] => {
-    const todos = this.getTodosSortedByIndex();
+    const todos = this.getTodosBySortIndex();
 
     if (_.isEqual(todos, this.todos)) {
       return this.todos;
@@ -51,7 +53,7 @@ export class TodoStore {
     this.history.push([...this.todos]);
     const newTodo = this.createNewTodo(todo);
     localStorageJson.updateObject<Todo[]>(KEY, (prevTodos) => [...prevTodos, newTodo]);
-    this.notifySubscribers();
+    this.handleChange();
     return newTodo;
   }
 
@@ -59,56 +61,99 @@ export class TodoStore {
     this.history.push([...this.todos]);
     localStorageJson.updateObject<Todo[]>(KEY, (prevTodos) =>
       prevTodos.map((prevTodo) =>
-        prevTodo.index === todo.index ? { ...prevTodo, ...todo } : prevTodo,
+        prevTodo.sortIndex === todo.sortIndex ? { ...prevTodo, ...todo } : prevTodo,
       ),
     );
-    this.notifySubscribers();
+    this.handleChange();
   }
 
-  deleteTodos(todoIndexes: number[]) {
+  deleteTodos(todoIds: string[]) {
     this.history.push([...this.todos]);
     localStorageJson.updateObject<Todo[]>(KEY, (prevTodos) =>
       prevTodos
-        .filter((prevTodo) => !todoIndexes.includes(prevTodo.index))
-        .filter((prevTodo) => !todoIndexes.includes(prevTodo.parent || -1)),
+        .filter((prevTodo) => !todoIds.includes(prevTodo.id))
+        .filter((prevTodo) => !todoIds.includes(prevTodo.parent || "")),
     );
-    this.notifySubscribers();
+
+    this.handleChange();
   }
 
-  duplicate(todoIndexes: number[]) {
+  moveUp(todoIds: string[]) {
+    function getUpSortIndex(todo?: Todo) {
+      return (todo?.sortIndex || 1) - 1;
+    }
+
+    this.move(
+      todoIds,
+      (todosToMove) => getUpSortIndex(todosToMove[0]),
+      (todosToMove) => last(todosToMove)?.sortIndex || 0,
+      (todo) => getUpSortIndex(todo),
+    );
+  }
+
+  moveDown(todoIds: string[]) {
+    const lastIndex = this.getStoredTodos().length - 1;
+
+    function getDownSortIndex(todo?: Todo | undefined) {
+      if (!todo || todo.sortIndex >= lastIndex) {
+        return lastIndex;
+      }
+
+      return todo.sortIndex + 1;
+    }
+
+    this.move(
+      todoIds,
+      (todosToMove) => getDownSortIndex(last(todosToMove)),
+      (todosToMove) => todosToMove[0]?.sortIndex,
+      (todo) => getDownSortIndex(todo),
+    );
+  }
+
+  private move(
+    todoIds: string[],
+    getSwapTargetIndex: (todosToMove: Todo[]) => number | undefined,
+    getSwapDestinationIndex: (todoToMove: Todo[]) => number | undefined,
+    getNextSortIndex: (todo: Todo) => number,
+  ) {
     this.history.push([...this.todos]);
 
-    const newTodos = this.getTodos()
-      .filter((todo) => todoIndexes.includes(todo.index))
+    const todos = this.getStoredTodos();
+    let todosToMove = todos.filter((todo) => todoIds.includes(todo.id));
+    const swapTargetIndex = getSwapTargetIndex(todosToMove);
+    const swapDestinationIndex = getSwapDestinationIndex(todosToMove);
+    todosToMove = todosToMove.map((todo) => ({ ...todo, sortIndex: getNextSortIndex(todo) }));
+    console.log(swapTargetIndex, swapDestinationIndex, todosToMove);
+    const otherTodos = todos
+      .filter((todo) => !todoIds.includes(todo.id))
+      .map((todo) => ({
+        ...todo,
+        sortIndex: todo.sortIndex === swapTargetIndex ? swapDestinationIndex : todo.sortIndex,
+      }));
+    console.log(otherTodos);
+    const sortedTodos = _.sortBy([...todosToMove, ...otherTodos], (todo) => todo.sortIndex);
+
+    localStorageJson.setObject(KEY, sortedTodos);
+    this.handleChange();
+  }
+
+  duplicate(todoIds: string[]) {
+    this.history.push([...this.todos]);
+
+    const newTodos = this.getStoredTodos()
+      .filter((todo) => todoIds.includes(todo.id))
       .map((todo, i) => {
-        const newTodo = this.createNewTodo({
+        const newTodo: Todo = this.createNewTodo({
           text: todo.text,
           completed: todo.completed,
           subtasks: todo.subtasks,
         });
-        newTodo.index = newTodo.index + i;
+        newTodo.sortIndex = newTodo.sortIndex + i;
         return newTodo;
       });
 
     localStorageJson.updateObject<Todo[]>(KEY, (prevTodos) => [...prevTodos, ...newTodos]);
-    this.notifySubscribers();
-  }
-
-  deleteTodo(todo: Todo) {
-    this.history.push([...this.todos]);
-    localStorageJson.updateObject<Todo[]>(KEY, (prevTodos) =>
-      prevTodos
-        .filter((prevTodo) => prevTodo.index !== todo.index)
-        .filter((prevTodo) => !prevTodo.subtasks.includes(todo.index)),
-    );
-    this.notifySubscribers();
-  }
-
-  clearTodos() {
-    this.history.push([...this.todos]);
-    localStorage.clear();
-    this.todos = this.initialState();
-    this.notifySubscribers();
+    this.handleChange();
   }
 
   undo() {
@@ -125,7 +170,7 @@ export class TodoStore {
     localStorageJson.setObject(KEY, todos);
     this.todos = todos;
 
-    this.notifySubscribers();
+    this.handleChange();
   }
 
   subscribe = (callback: TodoStoreSubscriber) => {
@@ -133,9 +178,24 @@ export class TodoStore {
     return () => this.unsubscribe(callback);
   };
 
-  private nextIndex = () => {
-    const highestIndex: number = _.maxBy(this.getTodos(), (todo) => todo.index)?.index || 0;
-    return highestIndex + 1;
+  private handleChange() {
+    this.reindexTodos();
+    this.notifySubscribers();
+  }
+
+  private reindexTodos = () => {
+    const todos = this.getTodosBySortIndex();
+    let index = 0;
+    todos.forEach((todo) => {
+      todo.sortIndex = index;
+      index++;
+    });
+    localStorageJson.setObject(KEY, todos);
+  };
+
+  private nextSortIndex = () => {
+    const numberOfTodos = this.getStoredTodos()?.length || 0;
+    return numberOfTodos + 1;
   };
 
   private unsubscribe = (callback: TodoStoreSubscriber) => {
@@ -143,7 +203,7 @@ export class TodoStore {
   };
 
   private notifySubscribers = () => {
-    const todos = this.getTodos();
+    const todos = this.getStoredTodos();
     this.subscribers.forEach((subscriber) => subscriber(todos));
   };
 
@@ -152,16 +212,21 @@ export class TodoStore {
       localStorageJson.setObject(KEY, []);
     }
 
-    return this.getTodosSortedByIndex()!;
+    return this.getTodosBySortIndex()!;
   }
 
-  private getTodosSortedByIndex() {
-    return _.sortBy(localStorageJson.getObject<Todo[]>(KEY), (todo) => todo.index);
+  private getTodosBySortIndex() {
+    return _.sortBy(this.getStoredTodos(), (todo) => todo.sortIndex);
   }
 
-  private createNewTodo(todo: TodoCreate) {
+  private getStoredTodos(): Todo[] {
+    return localStorageJson.getObject<Todo[]>(KEY) || [];
+  }
+
+  private createNewTodo(todo: TodoCreate): Todo {
     return {
-      index: this.nextIndex(),
+      id: uuid(),
+      sortIndex: this.nextSortIndex(),
       subtasks: [],
       completed: false,
       ...todo,

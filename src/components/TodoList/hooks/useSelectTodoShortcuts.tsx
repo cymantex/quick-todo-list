@@ -5,7 +5,7 @@ import { useSelectTodoStore } from "@/components/TodoList/hooks/useSelectTodoSto
 
 export function useSelectTodoShortcuts(todos: Todo[]) {
   const {
-    selectedTodoIndexes,
+    selectedTodoIds,
     selectPreviousTodo,
     multiSelectPreviousTodo,
     selectAllTodos,
@@ -14,16 +14,14 @@ export function useSelectTodoShortcuts(todos: Todo[]) {
   } = useSelectTodoStore();
 
   useKeyboardShortcuts(["CtrlA"], () => selectAllTodos(todos));
-  useSelectTodoShortcut("ArrowUp", selectedTodoIndexes, todos, (currentIndex) =>
-    selectPreviousTodo(todos, currentIndex),
+  useSelectTodoShortcut("ArrowUp", selectedTodoIds, todos, (todo) =>
+    selectPreviousTodo(todos, todo),
   );
-  useSelectTodoShortcut("ArrowDown", selectedTodoIndexes, todos, (currentIndex) =>
-    selectNextTodo(todos, currentIndex),
+  useSelectTodoShortcut("ArrowDown", selectedTodoIds, todos, (todo) => selectNextTodo(todos, todo));
+  useSelectTodoShortcut("ShiftArrowUp", selectedTodoIds, todos, (todo) =>
+    multiSelectPreviousTodo(todos, todo),
   );
-  useSelectTodoShortcut("ShiftArrowUp", selectedTodoIndexes, todos, (currentIndex, lastIndex) =>
-    multiSelectPreviousTodo(todos, currentIndex, lastIndex),
-  );
-  useSelectTodoShortcut("ShiftArrowDown", selectedTodoIndexes, todos, (currentIndex, lastIndex) =>
-    multiSelectNextTodo(todos, currentIndex, lastIndex),
+  useSelectTodoShortcut("ShiftArrowDown", selectedTodoIds, todos, (todo) =>
+    multiSelectNextTodo(todos, todo),
   );
 }
