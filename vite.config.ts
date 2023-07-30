@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react";
 import electron from "vite-plugin-electron";
 import renderer from "vite-plugin-electron-renderer";
 import pkg from "./package.json";
+import eslint from "vite-plugin-eslint";
 
 export default defineConfig(({ command }) => {
   rmSync("dist-electron", { recursive: true, force: true });
@@ -21,6 +22,7 @@ export default defineConfig(({ command }) => {
     },
     plugins: [
       react(),
+      eslint(),
       electron([
         {
           entry: "electron/main.ts",
