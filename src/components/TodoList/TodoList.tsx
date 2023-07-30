@@ -1,4 +1,4 @@
-import { TodoInputButton } from "@/components/TodoList/components/TodoInputButton";
+import { TodoInput } from "@/components/TodoList/components/TodoInput";
 import { Todo } from "@/todo/TodoStore";
 import { useTodos } from "@/todo/useTodos";
 import { useSelectTodoShortcuts } from "@/components/TodoList/hooks/useSelectTodoShortcuts";
@@ -17,7 +17,7 @@ export const TodoList = ({ onTodoTextChange }: TodoListProps) => {
   return (
     <>
       {todos.map((todo) => (
-        <TodoInputButton
+        <TodoInput
           key={todo.index}
           todo={todo}
           marked={markedTodo?.index === todo.index}
